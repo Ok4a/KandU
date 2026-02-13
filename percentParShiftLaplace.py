@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
 
 
-    with open(f'testData/shift_laplace_{config.get("Learn", "method")}.txt', mode = 'a') as txt_file:
+    with open(f'Data/shift_laplace_{config.get("Learn", "method")}.txt', mode = 'a') as txt_file:
         txt_file.write(f'\n{datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\n')
         txt_file.write(f'Config file: {file_str}')
         
