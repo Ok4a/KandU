@@ -1,5 +1,6 @@
 config_folder=`ls ./config/*.ini`
-for config_file in $yourfilenames
+for config_file in $config_folder
 do
-   python percentParShiftLaplace.py $config_file
+   echo $config_file
+   python3 percentParShiftLaplace.py $config_file
 done
