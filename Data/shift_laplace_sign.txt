@@ -1,0 +1,66 @@
+
+02/03/2026, 11:19:13
+Config file: test_config.ini
+Data:
+	1d_laplace_size: 10
+	amount: 10
+	params: 1 0.4
+	seed: 5
+	dim: 100
+Solver:
+	tol: 1e-10
+	max_iteration: None
+Learn:
+	iteration_count: 10
+	step_range: 0.1
+	method: sign
+	seed: 5
+	scale: 1 0.5 0.25
+Precondition:
+	num_coef: 10
+
+Train:
+
+02/03/2026, 11:19:36
+Config file: test_config.ini
+Data:
+	1d_laplace_size: 4
+	amount: 4
+	params: 1 0.4
+	seed: 5
+	dim: 16
+Solver:
+	tol: 1e-10
+	max_iteration: None
+Learn:
+	iteration_count: 4
+	step_range: 0.1
+	method: sign
+	seed: 5
+	scale: 1 0.5 0.25
+Precondition:
+	num_coef: 10
+
+Train:
+
+02/03/2026, 11:19:54
+Config file: test_config.ini
+Data:
+	1d_laplace_size: 4
+	amount: 4
+	params: 1 0.01
+	seed: 5
+	dim: 16
+Solver:
+	tol: 1e-10
+	max_iteration: None
+Learn:
+	iteration_count: 4
+	step_range: 0.1
+	method: sign
+	seed: 5
+	scale: 1 0.5 0.25
+Precondition:
+	num_coef: 10
+
+Train:

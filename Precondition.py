@@ -72,8 +72,6 @@ def randShift(size, numOffDiag = 1, rng = None, upper = True):
 
     return spar.csr_array(M)
 
-
-
 def randMShift(size, numShift, numOffDiag = 1, rng = None):
 
 
@@ -95,7 +93,16 @@ def parShift(size:int, upper_coef:list[int] = []):
 
     return spar.csr_array(np.eye(size) + np.diag(repCoef(size - 1, upper_coef, numUCoef), 1))
 
+def parShiftOff(size:int, upper_coef:list[int] = []):
 
+    numUCoef = len(upper_coef)
+
+    if numUCoef > size - 1:
+        raise Exception("More coefficients than off diagonal elements")
+
+
+    # return spar.csr_array(np.diag(repCoef(size - 1, upper_coef, numUCoef), 1))
+    return spar.diags(repCoef(size - 1, upper_coef, numUCoef), 1)
 
 def repCoef(len, coef, numCoef):
 
@@ -129,3 +136,18 @@ def genInitalParShift(size, numCoef, seed = None, scale = 0.05):
     coefList = rng.normal(scale=scale, size=numCoef)
 
     return coefList, parShift(size, coefList)
+
+
+
+def parShiftJacobi(A, size:int, upper_coef:list[int] = []):
+
+    numUCoef = len(upper_coef)
+
+    if numUCoef > size - 1:
+        raise Exception("More coefficients than off diagonal elements")
+
+
+    return spar.csr_array(Jacobi(A) + np.diag(repCoef(size - 1, upper_coef, numUCoef), 1))
+
+
+
