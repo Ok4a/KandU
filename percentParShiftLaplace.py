@@ -3,7 +3,7 @@ import Precondition as prec
 import numpy as np
 import util
 import scipy.sparse as sparse
-#import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import genLaplace
 import multiprocessing as mp
 from datetime import datetime
@@ -32,7 +32,7 @@ def runBiCGStab(A,b,M_inv, config:ConfigParser, stop_futher = True):
             b = np.ones((config.getint('Data', 'dim'),1 ))
 
 
-        _,_,k,flag = ls.BiCGSTAB(A, b, M_inv = M_inv, tol = config.getfloat('Solver', 'tol'), max_iter = config.getintOrNone('Solver', 'max_iteration'), ebutton = ebutton)
+        _,_,k,flag = ls.BiCGSTAB(A, b, M_inv = M_inv, tol = config.getfloat('Solver', 'tol'), max_iter = config.getintOrNone('Solver', 'max_iteration'), extra_stop = (ebutton, stop_futher))
 
 
         if flag == 2:
@@ -151,7 +151,7 @@ if __name__ == '__main__':
 
     
 
-    with open(f'Data/{config.get('Precondition', 'type')}_laplace_{config.get("Learn", "method")}.txt', mode = 'a') as txt_file:
+    with open(f'testData/{config.get('Precondition', 'type')}_laplace_{config.get("Learn", "method")}.txt', mode = 'a') as txt_file:
         txt_file.write(f'\n{datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\n')
         txt_file.write(f'Config file: {file_str}\n')
         
@@ -182,14 +182,14 @@ if __name__ == '__main__':
 
         
         pool = mp.Pool()
-        M_inv = prec.parShift(config.getint('Data', 'dim'), coef_list)
+        M_inv = prec.parShiftOff(config.getint('Data', 'dim'), coef_list)
         final_k_list, final_flag_list = zip(*pool.starmap(runBiCGStab, [(A, None, M_inv, config, False) for A in test_data]))
         ebutton.clear()
         
 
         config.set('Precondition', 'type', 'par_shift_jacobi')
         pool = mp.Pool()
-        M_inv = prec.parShift(config.getint('Data', 'dim'), [0])
+        M_inv = prec.parShiftOff(config.getint('Data', 'dim'), [0])
         jacobi_k_list, jacobi_flag_list = zip(*pool.starmap(runBiCGStab, [(A, None, M_inv, config, False) for A in test_data]))
         ebutton.clear()
         
