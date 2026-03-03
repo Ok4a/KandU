@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse as spar
 import scipy.sparse.linalg as sLG
 import linearSolver as LS
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 class dist():
     def __init__(self, param = [0, 1], rng = None, dist_type = 'n'):

@@ -3,7 +3,7 @@ import Precondition as prec
 import numpy as np
 import util
 import scipy.sparse as sparse
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import genLaplace
 import multiprocessing as mp
 from datetime import datetime
@@ -39,7 +39,7 @@ def runBiCGStab(A,b,M_inv, config:ConfigParser, stop_futher = True):
             ebutton.set()
         return k, flag
     
-    except:
+    except FloatingPointError:
         ebutton.set()
         return -1, 3
 
@@ -87,7 +87,9 @@ def laplaceDataML(data, file, config: ConfigParser):
 
             pool = mp.Pool()
             new_k_list, flag_list = zip(*pool.starmap(runBiCGStab, [(A, b, M_inv, config) for A in data]))
-
+            pool.close()
+            pool.join()
+            ebutton.clear()
 
             new_median = np.median(new_k_list)
             new_mean = np.mean(new_k_list)
@@ -103,7 +105,7 @@ def laplaceDataML(data, file, config: ConfigParser):
                     found_better = True
                 elif sign[1] > sign[-1] and config.get('Learn', 'method') == 'sign': # is it better or as good
                     found_better = True
-                elif new_mean <= best_mean_k and config.get('Learn', 'method')== 'mean': # is it better or as good
+                elif new_mean <= best_mean_k and config.get('Learn', 'method') == 'mean': # is it better or as good
                     found_better = True
 
             if found_better:
@@ -149,7 +151,7 @@ if __name__ == '__main__':
 
     
 
-    with open(f'Data/shift_laplace_{config.get("Learn", "method")}.txt', mode = 'a') as txt_file:
+    with open(f'testData/{config.get('Precondition', 'type')}_laplace_{config.get("Learn", "method")}.txt', mode = 'a') as txt_file:
         txt_file.write(f'\n{datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\n')
         txt_file.write(f'Config file: {file_str}\n')
         
@@ -176,15 +178,33 @@ if __name__ == '__main__':
         pool = mp.Pool()
         non_precond_k_list, non_pre_flag_list = zip(*pool.starmap(runBiCGStab,[(A, None, None, config, False) for A in test_data]))
         txt_file.write(f'No precond: {util.statStr(non_precond_k_list)}, flag: {np.sum(non_pre_flag_list)} \n\t{non_precond_k_list}\n\n')
+        ebutton.clear()
 
-
+        
         pool = mp.Pool()
         M_inv = prec.parShift(config.getint('Data', 'dim'), coef_list)
         final_k_list, final_flag_list = zip(*pool.starmap(runBiCGStab, [(A, None, M_inv, config, False) for A in test_data]))
+        ebutton.clear()
+        
 
-        sign = util.betterWorse(final_k_list, non_precond_k_list)
+        config.set('Precondition', 'type', 'par_shift_jacobi')
+        pool = mp.Pool()
+        M_inv = prec.parShift(config.getint('Data', 'dim'), [0])
+        jacobi_k_list, jacobi_flag_list = zip(*pool.starmap(runBiCGStab, [(A, None, M_inv, config, False) for A in test_data]))
+        ebutton.clear()
+        
+        sign_JvN = util.betterWorse(jacobi_k_list, non_precond_k_list)
 
-        txt_file.write(f'Last: {util.statStr(final_k_list)}, B: {sign[1]}, W: {sign[-1]}, flag: {np.sum(final_flag_list)} \n\t{final_k_list}\n')
+        
+        txt_file.write(f'Jacobi: {util.statStr(jacobi_k_list)},, BvN: {sign_JvN[1]}, WvN: {sign_JvN[-1]}, flag: {np.sum(jacobi_flag_list)} \n\t{jacobi_k_list}\n\n')
+
+
+
+        sign_PvN = util.betterWorse(final_k_list, non_precond_k_list)
+        sign_PvJ = util.betterWorse(final_k_list, jacobi_k_list)
+
+        txt_file.write(f'Last: {util.statStr(final_k_list)}, BvN: {sign_PvN[1]}, WvN: {sign_PvN[-1]}, BvJ: {sign_PvJ[1]}, WvJ: {sign_PvJ[-1]}, flag: {np.sum(final_flag_list)} \n\t{final_k_list}\n')
+        # txt_file.write(f'Last: {util.statStr(final_k_list)}, B: {sign[1]}, W: {sign[-1]}, flag: {np.sum(final_flag_list)} \n\t{final_k_list}\n')
 
             
             
@@ -194,6 +214,6 @@ if __name__ == '__main__':
         pool.close()
         pool.join()
 
-    n1 ,_,_ = plt.hist([non_precond_k_list,final_k_list],bins=40, alpha = 1, label=['Non', 'precond', 'jacobi'], color=['c', 'm', 'y'])
-    plt.legend()
-    plt.show()
+    # n1 ,_,_ = plt.hist([non_precond_k_list,final_k_list,jacobi_k_list],bins=40, alpha = 1, label=['Non', config.get('Precondition', 'type'), 'jacobi'], color=['c', 'm', 'y'])
+    # plt.legend()
+    # plt.show()
