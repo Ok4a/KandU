@@ -32,7 +32,7 @@ def runBiCGStab(A,b,M_inv, config:ConfigParser, stop_futher = True):
             b = np.ones((config.getint('Data', 'dim'),1 ))
 
 
-        _,_,k,flag = ls.BiCGSTAB(A, b, M_inv = M_inv, tol = config.getfloat('Solver', 'tol'), max_iter=config.getintOrNone('Solver', 'max_iteration'))
+        _,_,k,flag = ls.BiCGSTAB(A, b, M_inv = M_inv, tol = config.getfloat('Solver', 'tol'), max_iter = config.getintOrNone('Solver', 'max_iteration'), ebutton = ebutton)
 
 
         if flag == 2:
@@ -151,7 +151,7 @@ if __name__ == '__main__':
 
     
 
-    with open(f'testData/{config.get('Precondition', 'type')}_laplace_{config.get("Learn", "method")}.txt', mode = 'a') as txt_file:
+    with open(f'Data/{config.get('Precondition', 'type')}_laplace_{config.get("Learn", "method")}.txt', mode = 'a') as txt_file:
         txt_file.write(f'\n{datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\n')
         txt_file.write(f'Config file: {file_str}\n')
         
