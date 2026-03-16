@@ -115,9 +115,9 @@ def _BiCGSTAB(A, b, x0 = None, M_inv = None, tol = 1e-10, max_iter = None, extra
             if extra_stop[0].is_set() and extra_stop[1]:
                 return 0, 0, -1, 4
 
-        p_hat = M_inv@p if is_precond else p
+        p_hat = M_inv @ p if is_precond else p
 
-        Ap_prod = A@p_hat
+        Ap_prod = A @ p_hat
 
         temp = inner(r_tilde, Ap_prod)
         if temp == 0:

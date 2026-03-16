@@ -13,7 +13,7 @@ from configparser import ConfigParser
 
 ebutton = mp.Event()
 
-def runBiCGStab(A,b,M_inv, config:ConfigParser, stop_futher = True):
+def runBiCGStab(A,b,M_inv, config:ConfigParser, stop_futher = True, other = None):
     np.seterr(all = 'raise')
 
     try:
@@ -23,10 +23,13 @@ def runBiCGStab(A,b,M_inv, config:ConfigParser, stop_futher = True):
         precond_type = config.get('Precondition', 'type')
         if M_inv is None:
             pass
+        elif other == 'jacobi':
+            M_inv = prec.Jacobi(A)
         elif precond_type.lower() == 'par_shift':
             M_inv = sparse.eye(config.getint('Data', 'dim')) + M_inv
         elif precond_type.lower() == 'par_shift_jacobi':
             M_inv = prec.Jacobi(A) + M_inv
+        
 
         if b is None:
             b = np.ones((config.getint('Data', 'dim'),1 ))
@@ -101,12 +104,23 @@ def laplaceDataML(data, file, config: ConfigParser):
             
 
             if np.sum(flag_list) < 1: # if all converged  
-                if new_median <= best_median_k and config.get('Learn', 'method') == 'median': # is it better or as good
-                    found_better = True
-                elif sign[1] > sign[-1] and config.get('Learn', 'method') == 'sign': # is it better or as good
-                    found_better = True
-                elif new_mean <= best_mean_k and config.get('Learn', 'method') == 'mean': # is it better or as good
-                    found_better = True
+                if  config.get('Learn', 'method') == 'median':
+                    if new_median <= best_median_k:
+                        found_better = True
+                    elif 1 > rng.uniform() * (new_median-best_median_k+1) and config.getboolean('Learn', 'allow_disimprovement'):
+                        found_better = True
+
+                elif config.get('Learn', 'method') == 'sign':
+                    if sign[1] > sign[-1]:
+                        found_better = True
+                    elif 1 > rng.uniform() * (sign[-1] - sign[1] + 2) and config.getboolean('Learn', 'allow_disimprovement'):
+                        found_better = True
+
+                elif config.get('Learn', 'method') == 'mean':
+                    if new_mean <= best_mean_k:
+                        found_better = True
+                    elif 1 > rng.uniform()*(new_mean-best_mean_k+1) and config.getboolean('Learn', 'allow_disimprovement'):
+                        found_better = True
 
             if found_better:
                 if not found_initial:
@@ -151,7 +165,7 @@ if __name__ == '__main__':
 
     
 
-    with open(f'testData/{config.get('Precondition', 'type')}_laplace_{config.get("Learn", "method")}.txt', mode = 'a') as txt_file:
+    with open(f'Data/{config.get('Precondition', 'type')}_laplace_{config.get("Learn", "method")}.txt', mode = 'a') as txt_file:
         txt_file.write(f'\n{datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\n')
         txt_file.write(f'Config file: {file_str}\n')
         
