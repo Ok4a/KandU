@@ -231,7 +231,7 @@ class shiftPrecond():
 
     def newChange(self):
 
-        par_list = config.getintList('Precondition', 'par_list')
+        par_list = self.config.getintList('Precondition', 'par_list')
 
         self.coef_index = self.rng.choice(self.config.getint('Precondition', 'num_coef'))
         par_sum = 0
@@ -242,6 +242,7 @@ class shiftPrecond():
                 break
             else:
                 par_sum += par_list[ii]
+
 
 
         self.change = self.rng.uniform(low = -self.config.getfloat('Learn', 'step_range'), high = self.config.getfloat('Learn', 'step_range'))

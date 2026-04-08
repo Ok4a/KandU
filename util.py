@@ -26,10 +26,15 @@ def GenAb(size):
 
 
 def getConfig(file_name: str):
-    config_file = ConfigParser(converters={'intOrNone': intOrNone, 'floatList': floatList, 'precondFunction': PrecondFunction})
+    config_file = ConfigParser(converters={'intOrNone': intOrNone, 'floatList': floatList, 'precondFunction': PrecondFunction, 'intList': intList})
     config_file.read(file_name)
 
     config_file['Data']['dim'] = str(config_file.getint('Data', '1D_laplace_size')*config_file.getint('Data', '1D_laplace_size'))
+    
+    if len(config_file.getintList('Precondition', 'par_list')) != len(config_file.getintList('Precondition', 'diag_list')):
+        raise Exception(f"par_list, {len(config_file.getintList('Precondition', 'par_list'))}, and diag_list, {len(config_file.getintList('Precondition', 'diag_list'))}, not of equal size")
+
+    config_file['Precondition']['num_coef'] = str(np.sum(config_file.getintList('Precondition', 'par_list')))
 
     return config_file
 
@@ -38,11 +43,11 @@ def intOrNone(s:str):
     
 def floatList(s:str):
     return [float(x) for x in s.split(' ')]
-
+def intList(s:str):
+    return [int(x) for x in s.split(' ')]
 
 
 def PrecondFunction(precond_type: str):
-    print("dawd")
     
     if precond_type.lower() == 'par_shift':
         return prec.parShift
