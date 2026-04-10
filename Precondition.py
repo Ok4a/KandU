@@ -1,19 +1,19 @@
 import numpy as np
-from scipy.sparse import diags
 from scipy.sparse.linalg._interface import LinearOperator
 import scipy.sparse as spar
 import util
-from itertools import islice, cycle
+from itertools import islice, cycle, product
 from configparser import ConfigParser
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 def Jacobi(A, invert = True, normalEq = False):
      
     A = np.conj(A.T) @ A  if normalEq else A
     if invert:
-        return diags(1/A.diagonal())
+        return spar.diags(1/A.diagonal())
     else:
-        return diags(np.diag(A))
+        return spar.diags(np.diag(A))
     
 
 class Jacobi_class():
@@ -180,16 +180,15 @@ def superParShift(size, coef_list):
 
 
 
-class shiftPrecond():
+class diagShiftPrecond():
     def __init__(self, config:ConfigParser, rng:np.random = None, zero_diag = True):
         self.config = config
         self.zero_diag = zero_diag
-        # self.rng = np.random.default_rng(config.getint('Learn', 'seed'))
-        self.rng = np.random.default_rng()
+        self.rng = np.random.default_rng(config.getint('Learn', 'seed'))
 
         self.coef_dict = self._genInitialCoef()
-        self.temp_coef = self.coef_dict.copy()
-        self.best_coef = self.coef_dict.copy()
+        self.temp_coef = deepcopy(self.coef_dict)
+        self.best_coef = deepcopy(self.coef_dict)
 
         self.diag_list_index = None
         self.par_index = None
@@ -211,15 +210,14 @@ class shiftPrecond():
         diag_list = self.config.getintList('Precondition', 'diag_list')
 
         if coef_type == 'last':
-            self.temp_coef = self.coef_dict.copy()
+            self.temp_coef = deepcopy(self.coef_dict)
         elif coef_type == 'best':
-            self.temp_coef = self.best_coef.copy()
+            self.temp_coef = deepcopy(self.best_coef)
 
 
         if scale is not None:
             self.temp_coef[diag_list[self.diag_list_index]][self.par_index] += self.change*scale
-        else:
-            pass
+
             
 
 
@@ -247,26 +245,90 @@ class shiftPrecond():
 
         self.change = self.rng.uniform(low = -self.config.getfloat('Learn', 'step_range'), high = self.config.getfloat('Learn', 'step_range'))
 
+    
+    def keep(self):
+        self.coef_dict = deepcopy(self.temp_coef)
+
+    def foundBest(self):
+        
+        self.best_coef = deepcopy(self.temp_coef)
+
+
+
+class randEntryPrecond():
+    def __init__(self, config:ConfigParser, rng:np.random = None, zero_diag = True):
+        self.config = config
+        self.zero_diag = zero_diag
+        self.rng = np.random.default_rng(self.config.getint('Learn', 'seed'))
+
+        self.precond = self._genInitial()
+        self.new_precond = self.precond
+        self.best_precond = self.precond
+        self.change_index = None
+        self.change_amount = 0
+        self.change = None
+
+        # if self.config.getint('Data', 'dim')/2 <= self.config.getint('Precondition', 'num_coef'):
+        #     raise Exception('The number of coef is larger than the dim halved')
+        
+
+
+    def _genInitial(self):
+        dim = self.config.getint('Data', 'dim')
+        return spar.csr_array((dim, dim), dtype=float)
+
+    
+    def makePrecond(self, coef_type = 'last', scale = None):
+        if coef_type == 'last':
+            temp_precond = self.precond
+        elif coef_type == 'best':
+            temp_precond = self.best_precond
+        else:
+            raise Exception(f'"{coef_type}" not defined')
+
+
+        if scale is None:
+            return temp_precond
+        else:
+            self.new_precond = temp_precond + self.change * scale
+            return self.new_precond
+    
+    
+
+    def newChange(self):
+        dim = self.config.getint('Data', 'dim')
+        num_coef = self.config.getint('Precondition', 'num_coef')
+
+        self.change_index = self.rng.choice(dim, size=(2, num_coef), replace=False)
+
+
+
+
+
+        self.change_amount = self.rng.uniform(low = -self.config.getfloat('Learn', 'step_range'), high = self.config.getfloat('Learn', 'step_range'))
+
+        self.change = spar.csr_array(([self.change_amount]*num_coef, (self.change_index[0], self.change_index[1])), shape=(dim,dim))
 
 
     
     def keep(self):
-        self.coef_dict = self.temp_coef.copy()
+        self.precond = self.new_precond
 
-
-
-
+    def foundBest(self):
+        self.best_precond = self.new_precond
 
 
 
 
 if __name__ == '__main__':
-    config = util.getConfig('test_config.ini')
+    gconfig = util.getConfig('test_config.ini')
+
+
+    print(np.random.choice(10,6))
 
 
 
-
-    precond = shiftPrecond(config)
+    precond = randEntryPrecond(gconfig)
 
 
     M_inv = precond.makePrecond()
@@ -276,13 +338,17 @@ if __name__ == '__main__':
     plt.figure(2)
     plt.imshow(dense2)
 
-    precond.newChange()
+    for i in range(1000):
+        precond.newChange()
+        M_inv = precond.makePrecond(scale = 1)
+        precond.keep()
 
-    M_inv = precond.makePrecond(scale = 10000)
     dense1 = M_inv.toarray()
     dense1[dense1 == 0.0] = np.nan
 
     plt.figure(1)
     plt.imshow(dense1)
+
+
     plt.show()
     

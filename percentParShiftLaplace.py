@@ -64,13 +64,11 @@ def laplaceDataML(data, file, config: ConfigParser, precond_class: prec.shiftPre
     b = np.ones((config.getint('Data', 'dim'), 1))
 
 
-
-
     # rng = np.random.default_rng(config.getint('Learn', 'seed'))
     # coef_list = rng.normal(scale = 0.05, size=config.getint('Precondition', 'num_coef'))
     # coef_list_initial = coef_list.copy()
     found_initial = False
-    improved = False
+    # improved = False
 
     prev_median_k = np.inf
     prev_mean_k = np.inf
@@ -80,13 +78,12 @@ def laplaceDataML(data, file, config: ConfigParser, precond_class: prec.shiftPre
     # best_median = np.inf
     # best_mean = np.inf
     # best_k_list = [np.inf]*config.getint('Data', 'amount')
-    best_coef_list = []
+    # best_coef_list = []
     best_index = (0,0)
 
     count = 0
     prev_index = (0, 0)
 
-    precond_type = config.get('Precondition', 'type')
 
 
     # M_inv = prec.parShift(config.getint('Data', 'dim'), coef_list)
@@ -100,7 +97,7 @@ def laplaceDataML(data, file, config: ConfigParser, precond_class: prec.shiftPre
         found_better = False
         for scale, pm in product(config.getfloatList('Learn', 'change_scales'), [1, -1]):
             count += 1
-            print(prev_mean_k, ii, count, prev_index, best_index, end = '\r')
+            print(prev_mean_k, ii, count, prev_index, best_index,precond_class.coef_dict[-1][0]-precond_class.best_coef[-1][0], end = '\r')
 
 
 
@@ -168,11 +165,9 @@ def laplaceDataML(data, file, config: ConfigParser, precond_class: prec.shiftPre
                     found_initial = True
 
                 better_measure = new_median * config.getfloat('Learn', 'median_best_scale') + new_mean * config.getfloat('Learn', 'mean_best_scale')
-
                 if better_measure < best_measure:
                     best_measure = better_measure
-                    # best_coef_list = precond_class.coef_dict.copy()
-                    precond_class.best_coef = precond_class.coef_dict.copy()
+                    precond_class.foundBest()
                     best_index = (ii, count)
                 
                 # if improved:
@@ -188,7 +183,7 @@ def laplaceDataML(data, file, config: ConfigParser, precond_class: prec.shiftPre
                 file.write(f'({ii}, {count}): {util.statStr(new_k_list)}, B: {sign[1]}, W: {sign[-1]}, \n\t{new_k_list}\n')
                 prev_k_list = new_k_list
                 break
-
+    
     pool.close()
     pool.join()
 
@@ -210,7 +205,14 @@ if __name__ == '__main__':
 
 
     config = util.getConfig(file_str)
-    precond_class = prec.shiftPrecond(config)
+    precond_type = config.get('Precondition', 'type')
+    if precond_type == 'diag_shift':
+        precond_class = prec.diagShiftPrecond(config)
+    elif precond_type == 'rand_entry':
+        precond_class = prec.randEntryPrecond(config)
+    else:
+        raise Exception(f'"{precond_type}" preconditioner not defined')
+
 
 
 
@@ -288,8 +290,8 @@ if __name__ == '__main__':
         txt_file.write(f'Best: {util.statStr(best_k_list)}, BvN: {sign_BvN[1]}, WvN: {sign_BvN[-1]}, BvJ: {sign_BvJ[1]}, WvJ: {sign_BvJ[-1]}, flag: {np.sum(final_flag_list)} \n\t{best_k_list}\n')
 
             
-        txt_file.write(f'\nLast Coef List\n{coef_list}\n')
-        txt_file.write(f'\nBest Coef List\n{best_coef_list}\n')
+        txt_file.write(f'\nLast Coef List\n{precond_class.coef_dict}\n')
+        txt_file.write(f'\nBest Coef List\n{precond_class.best_coef}\n')
 
 
         pool.close()
